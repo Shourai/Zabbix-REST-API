@@ -3,7 +3,8 @@ from flask_cors import CORS
 from pyzabbix import ZabbixAPI
 import json
 import urllib3
-from datetime import datetime
+import time
+from datetime import datetime, date
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -39,7 +40,7 @@ def getHosts():
 
 @app.route('/status')
 def getErrors():
-    jsonreturn = []
+    status = []
     errors = zapi.trigger.get(only_true=1,
                               skipDependent=1,
                               monitored=1,
@@ -49,21 +50,33 @@ def getErrors():
 
     for error in errors:
         timestamp = datetime.fromtimestamp(int(error['lastchange']))
-        jsonreturn.append({
+        status.append({
             "triggerid": error['triggerid'],
             "error": error['description'],
             "location": error["hosts"][0]["name"],
             "date": timestamp.strftime("%a %b %d"),
             "time": timestamp.strftime("%X")})
-    return jsonify(jsonreturn)
+    return jsonify(status)
 
-# @app.route('/history')
+
+@app.route('/history')
 def getHistoricalTriggers():
-    history = zapi.event.get(objectids="58008")
-    print(history)
+    today = date.today()
+    unixtime = time.mktime(time.strptime(str(today), "%Y-%m-%d"))
+    events = zapi.event.get(time_from=unixtime,
+                             selectHosts=["name"],
+                             sortfield="clock",
+                             sortorder="DESC"
+                             )
+    history = list()
+    for event in events:
+        timestamp = datetime.fromtimestamp(int(event['clock']))
+        history.append({
+            "name": event['hosts'][0]['name'],
+            "issue": event['name'],
+            "time": timestamp.strftime("%X")})
 
-getHistoricalTriggers()
-
+    return jsonify(history)
 
 def hostStatus():
     enabled = 0
