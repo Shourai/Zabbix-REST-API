@@ -47,7 +47,6 @@ def getErrors():
                               active=1,
                               selectHosts=['name'],
                               min_severity=2)
-
     for error in errors:
         timestamp = datetime.fromtimestamp(int(error['lastchange']))
         status.append({
@@ -55,7 +54,8 @@ def getErrors():
             "error": error['description'],
             "location": error["hosts"][0]["name"],
             "date": timestamp.strftime("%a %b %d"),
-            "time": timestamp.strftime("%X")})
+            "time": timestamp.strftime("%X"),
+            "severity": error['priority']})
     return jsonify(status)
 
 
@@ -77,21 +77,6 @@ def getHistoricalTriggers():
             "time": timestamp.strftime("%X")})
 
     return jsonify(history)
-
-def hostStatus():
-    enabled = 0
-    disabled = 0
-    hosts = getHosts()
-    for host in hosts:
-        if host['status'] == '0':
-            enabled += 1
-        else:
-            disabled += 1
-    # with open('../frontend/src/data/hoststatus.json', 'w') as file:
-    #     json.dump({'enabled': enabled, 'disabled': disabled, 'total': len(hosts)}, file)
-    # with open('../frontend/src/data/hosts.json', 'w') as file:
-    #     json.dump(hosts, file)
-    return hosts
 
 
 if __name__ == '__main__':
